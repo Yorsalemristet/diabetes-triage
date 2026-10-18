@@ -1,3 +1,4 @@
+
 name: CI - Diabetes Triage
 
 on:
@@ -22,9 +23,29 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest==9.1.1 httpx==0.28.1
+          python -m pip install -r requirements.txt
+          python -m pip install pytest==9.1.1 httpx==0.28.1 ruff
+
+      - name: Lint Python code
+        run: |
+          ruff check app/ training/ tests/
+
+      - name: Training smoke test
+        run: |
+          python training/train.py | tee training-results.txt
+          test -f models/model.joblib
 
       - name: Run API tests
         run: |
           python -m pytest tests/ -v
+
+      - name: Upload training artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diabetes-training-artifacts
+          path: |
+            models/model.joblib
+            training-results.txt
+          if-no-files-found: warn
+  
