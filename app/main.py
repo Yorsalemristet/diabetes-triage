@@ -1,3 +1,5 @@
+
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -6,7 +8,22 @@ import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "model.joblib"
+# Select model version from environment variable
+MODEL_VERSION = os.getenv("MODEL_VERSION", "v0.1")
+
+MODEL_FILES = {
+    "v0.1": "model.joblib",
+    "v0.2": "model_v02.joblib",
+}
+
+if MODEL_VERSION not in MODEL_FILES:
+    raise ValueError(f"Unsupported model version: {MODEL_VERSION}")
+
+MODEL_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "models"
+    / MODEL_FILES[MODEL_VERSION]
+)
 
 model = None
 
@@ -38,7 +55,7 @@ class PatientFeatures(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_version": "v0.1"}
+    return {"status": "ok", "model_version": MODEL_VERSION}
 
 
 @app.post("/predict")
